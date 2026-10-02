@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>nav2_test_pos</name>
+  <version>0.0.0</version>
+  <description>px4_nav2_bridge 的位置控制版：把 controller_server(MPPI) 換成自己實作的
+    FollowPath action server，直接送位置 setpoint 給 PX4，不經過 /cmd_vel 速度控制，
+    繞開機體/世界座標速度旋轉需要正確 yaw 回授這個問題。</description>
+  <maintainer email="a0929370607@gmail.com">root</maintainer>
+  <license>TODO: License declaration</license>
+
+  <depend>rclpy</depend>
+  <depend>px4_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>nav2_msgs</depend>
+  <depend>std_srvs</depend>
+  <depend>tf2_ros</depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
