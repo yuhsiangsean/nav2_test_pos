@@ -25,6 +25,7 @@ PX4 TrajectorySetpoint 的 position 送出去 —— 純位置控制，不經過
   ros2 service call /position_controller/land  std_srvs/srv/Trigger
 """
 import math
+import threading
 import time
 
 from nav2_msgs.action import FollowPath
@@ -113,9 +114,28 @@ class PositionController(LifecycleNode):
             callback_group=cb_group,
         )
 
-        self.create_timer(0.05, self.px4_loop, callback_group=cb_group)  # 20 Hz
+        # PX4 20Hz 心跳刻意不用 rclpy timer（那樣會跟 action server 的
+        # execute_follow_path 搶同一個 executor 執行緒池）。execute_follow_path
+        # 距離遠的目標要跑比較久，萬一執行緒池忙碌，連心跳都可能被排隊延後——
+        # PX4 的 OFFBOARD 模式要求持續收到 setpoint，心跳斷太久 PX4 會自己觸發
+        # failsafe（很多設定下就是自動降落），不是我們的程式邏輯主動下指令，
+        # 但後果一樣嚴重。改成獨立的 Python thread，直接呼叫 publisher，完全不
+        # 透過 executor 排程，不管 action server 多忙都不會被卡住。
+        self._heartbeat_stop = threading.Event()
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
+        self._heartbeat_thread.start()
 
         self.get_logger().info('position_controller ready (lifecycle node)')
+
+    def _heartbeat_loop(self):
+        while not self._heartbeat_stop.is_set():
+            self.px4_loop()
+            self._heartbeat_stop.wait(0.05)
+
+    def destroy_node(self):
+        self._heartbeat_stop.set()
+        self._heartbeat_thread.join(timeout=1.0)
+        super().destroy_node()
 
     # ================================================================
     # Lifecycle
