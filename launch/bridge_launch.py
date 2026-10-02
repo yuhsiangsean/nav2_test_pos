@@ -142,7 +142,15 @@ def generate_launch_description():
         executable='lifecycle_manager',
         name='lifecycle_manager_navigation',
         output='screen',
-        parameters=[{'autostart': autostart, 'node_names': LIFECYCLE_NODES}],
+        parameters=[{
+            'autostart': autostart,
+            'node_names': LIFECYCLE_NODES,
+            # position_controller.py 用 rclpy 的 LifecycleNode 寫的，沒有像
+            # C++ 版 nav2 lifecycle node 那樣自動內建 bond 心跳機制，activate
+            # 之後 lifecycle_manager 等不到心跳會判定「聯繫不上」直接中止整個
+            # 啟動流程。這裡關掉 bond 檢查（0.0 = 不要求心跳），其他 node 不受影響。
+            'bond_timeout': 0.0,
+        }],
     )
 
     return LaunchDescription([
