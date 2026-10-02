@@ -323,7 +323,13 @@ class PositionController(LifecycleNode):
 def main():
     rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
     node = PositionController()
-    executor = MultiThreadedExecutor()
+    # 預設 MultiThreadedExecutor() 的執行緒數等於 CPU 核心數（RPi4 約4個）。
+    # execute_follow_path() 每個 goal 執行期間會整個佔用一個執行緒直到結束
+    # (while 迴圈 + time.sleep)，如果前一個 goal 因為 bt_navigator 端逾時放棄、
+    # 但 server 端其實沒有真的被取消、還在背景跑，執行緒就不會釋放，連續失敗
+    # 幾次後執行緒被佔滿，新 goal 連「確認收到」都要排隊等很久。多給一點執行緒
+    # 當緩衝，不要讓這種情況輕易卡死。
+    executor = MultiThreadedExecutor(num_threads=8)
     executor.add_node(node)
     try:
         executor.spin()
