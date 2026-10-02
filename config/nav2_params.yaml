@@ -13,6 +13,13 @@ bt_navigator:
     default_server_timeout: 100
     wait_for_service_timeout: 1000
     action_server_result_timeout: 900.0
+    # 預設的 navigate_to_pose_w_replanning_and_recovery.xml 裡的 recovery 子樹
+    # 需要 local_costmap/clear_entirely_local_costmap 這個 service，但這個專案
+    # 的 controller_server(position_controller.py)沒有實作 costmap，service
+    # 不存在，bt_navigator 載入時會直接丟例外整個起不來。改用
+    # navigate_w_replanning_time.xml：只有 ComputePathToPose -> FollowPath，
+    # 完全不碰 costmap/IsPathValid。
+    default_nav_to_pose_bt_xml: "/opt/ros/jazzy/share/nav2_bt_navigator/behavior_trees/navigate_w_replanning_time.xml"
     navigators: ["navigate_to_pose", "navigate_through_poses"]
     navigate_to_pose:
       plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
